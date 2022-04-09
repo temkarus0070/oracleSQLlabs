@@ -402,8 +402,73 @@ end;
  которая по данному курсору формирует HTML-таблицу, содержащую информацию из курсора. Тип возвращаемого значения – clob.
  */
 
- CREATE OR REPLACE FUNCTION print_html_table(v_cursor in sys_refcursor) return clob
-is v_table clob;
+CREATE OR REPLACE FUNCTION print_html_table(v_cursor in out sys_refcursor) return clob
+  is
+    v_table      clob;
+    l_curid     number;
+    v_cols_count integer;
+    v_desc_tab   DBMS_sql.DESC_TAB;
+     l_text       VARCHAR2(32767) ;
+   l_varchar2   VARCHAR2(32767) ;
+       l_number     NUMBER;
+      l_date       DATE;
+        v_row number;
 begin
 
+    v_table := '<table>';
+    l_curid := DBMS_SQL.TO_CURSOR_NUMBER(v_cursor);
+    DBMS_SQL.DESCRIBE_COLUMNS(l_curid, v_cols_count, v_desc_tab);
+    v_table := v_table || '<th>';
+    for pos in 1..v_cols_count
+        loop
+            v_table := v_table || '<td>' || v_desc_tab(pos).COL_NAME || '</td>';
+            CASE v_desc_tab(pos).col_type
+        WHEN 1 THEN
+               DBMS_SQL.DEFINE_COLUMN (l_curid,pos,l_varchar2,2000);
+            WHEN 2 THEN
+               DBMS_SQL.DEFINE_COLUMN (l_curid, pos, l_number);
+            WHEN 12 THEN
+               DBMS_SQL.DEFINE_COLUMN (l_curid, pos, l_date);
+            ELSE
+               DBMS_SQL.DEFINE_COLUMN (l_curid,pos,l_varchar2,2000);
+         END CASE;
+        end loop;
+    v_table := v_table || '</th>';
+
+    v_table := v_table || '<tr>';
+    loop
+        v_row := DBMS_SQL.FETCH_ROWS(l_curid);
+        EXIT WHEN v_row=0;
+         for pos in 1..v_cols_count
+        loop
+           CASE v_desc_tab(pos).col_type
+            WHEN 1 THEN
+                  DBMS_SQL.COLUMN_VALUE (l_curid, pos, l_varchar2);
+                  l_text := LTRIM (l_text || ',"' || l_varchar2 || '"', ',');
+               WHEN 2 THEN
+                  DBMS_SQL.COLUMN_VALUE (l_curid, pos, l_number);
+                  l_text := LTRIM (l_text || ',' || l_number, ',');
+               WHEN 12 THEN
+                  DBMS_SQL.COLUMN_VALUE (l_curid, pos, l_date);
+                  l_text := LTRIM (l_text|| ','|| TO_CHAR (l_date, 'DD/MM/YYYY HH24:MI:SS'),',');
+               ELSE
+                  l_text := LTRIM (l_text || ',"' || l_varchar2 || '"', ',');
+            END CASE;
+            v_table := v_table || '<td>' || l_text || '</td>';
+        end loop;
+    v_table := v_table || '</tr>';
+    end loop;
+
+
+    return v_table;
 end;
+
+
+
+    declare
+        v_cur SYS_REFCURSOR;
+    BEGIN
+        OPEN v_cur FOR SELECT * FROM EMPLOYEES;
+        DBMS_OUTPUT.PUT_LINE(PRINT_HTML_TABLE(v_cur));
+
+    end;
