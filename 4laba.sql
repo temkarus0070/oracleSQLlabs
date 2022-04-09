@@ -1,3 +1,4 @@
+--Претков Артем
 /*
  1.	В анонимном PL/SQL блоке распечатать все пифагоровы числа, меньшие 25 (для печати использовать пакет dbms_output, процедуру put_line).
  */
@@ -392,9 +393,7 @@ begin
     return v_table;
     end;
     begin
-
 end;
-
 
 
 /*
@@ -403,16 +402,16 @@ end;
  */
 
 CREATE OR REPLACE FUNCTION print_html_table(v_cursor in out sys_refcursor) return clob
-  is
+    is
     v_table      clob;
-    l_curid     number;
+    l_curid      number;
     v_cols_count integer;
     v_desc_tab   DBMS_sql.DESC_TAB;
-     l_text       VARCHAR2(32767) ;
-   l_varchar2   VARCHAR2(32767) ;
-       l_number     NUMBER;
-      l_date       DATE;
-        v_row number;
+    l_text       VARCHAR2(32767) ;
+    l_varchar2   VARCHAR2(32767) ;
+    l_number     NUMBER;
+    l_date       DATE;
+    v_row        number;
 begin
 
     v_table := '<table>';
@@ -423,40 +422,33 @@ begin
         loop
             v_table := v_table || '<td>' || v_desc_tab(pos).COL_NAME || '</td>';
             CASE v_desc_tab(pos).col_type
-        WHEN 1 THEN
-               DBMS_SQL.DEFINE_COLUMN (l_curid,pos,l_varchar2,2000);
-            WHEN 2 THEN
-               DBMS_SQL.DEFINE_COLUMN (l_curid, pos, l_number);
-            WHEN 12 THEN
-               DBMS_SQL.DEFINE_COLUMN (l_curid, pos, l_date);
-            ELSE
-               DBMS_SQL.DEFINE_COLUMN (l_curid,pos,l_varchar2,2000);
-         END CASE;
+                WHEN 1 THEN DBMS_SQL.DEFINE_COLUMN(l_curid, pos, l_varchar2, 2000);
+                WHEN 2 THEN DBMS_SQL.DEFINE_COLUMN(l_curid, pos, l_number);
+                WHEN 12 THEN DBMS_SQL.DEFINE_COLUMN(l_curid, pos, l_date);
+                ELSE DBMS_SQL.DEFINE_COLUMN(l_curid, pos, l_varchar2, 2000);
+                END CASE;
         end loop;
     v_table := v_table || '</th>';
 
     v_table := v_table || '<tr>';
     loop
         v_row := DBMS_SQL.FETCH_ROWS(l_curid);
-        EXIT WHEN v_row=0;
-         for pos in 1..v_cols_count
-        loop
-           CASE v_desc_tab(pos).col_type
-            WHEN 1 THEN
-                  DBMS_SQL.COLUMN_VALUE (l_curid, pos, l_varchar2);
-                  l_text := LTRIM (l_text || ',"' || l_varchar2 || '"', ',');
-               WHEN 2 THEN
-                  DBMS_SQL.COLUMN_VALUE (l_curid, pos, l_number);
-                  l_text := LTRIM (l_text || ',' || l_number, ',');
-               WHEN 12 THEN
-                  DBMS_SQL.COLUMN_VALUE (l_curid, pos, l_date);
-                  l_text := LTRIM (l_text|| ','|| TO_CHAR (l_date, 'DD/MM/YYYY HH24:MI:SS'),',');
-               ELSE
-                  l_text := LTRIM (l_text || ',"' || l_varchar2 || '"', ',');
-            END CASE;
-            v_table := v_table || '<td>' || l_text || '</td>';
-        end loop;
-    v_table := v_table || '</tr>';
+        EXIT WHEN v_row = 0;
+        for pos in 1..v_cols_count
+            loop
+                l_text := '';
+                CASE v_desc_tab(pos).col_type
+                    WHEN 1 THEN DBMS_SQL.COLUMN_VALUE(l_curid, pos, l_varchar2);
+                                l_text := LTRIM(l_text || ',"' || l_varchar2 || '"', ',');
+                    WHEN 2 THEN DBMS_SQL.COLUMN_VALUE(l_curid, pos, l_number);
+                                l_text := LTRIM(l_text || ',' || l_number, ',');
+                    WHEN 12 THEN DBMS_SQL.COLUMN_VALUE(l_curid, pos, l_date);
+                                 l_text := LTRIM(l_text || ',' || TO_CHAR(l_date, 'DD/MM/YYYY HH24:MI:SS'), ',');
+                    ELSE l_text := LTRIM(l_text || ',"' || l_varchar2 || '"', ',');
+                    END CASE;
+                v_table := v_table || '<td>' || l_text || '</td>';
+            end loop;
+        v_table := v_table || '</tr>';
     end loop;
 
 
@@ -465,10 +457,10 @@ end;
 
 
 
-    declare
-        v_cur SYS_REFCURSOR;
-    BEGIN
-        OPEN v_cur FOR SELECT * FROM EMPLOYEES;
-        DBMS_OUTPUT.PUT_LINE(PRINT_HTML_TABLE(v_cur));
+declare
+    v_cur SYS_REFCURSOR;
+BEGIN
+    OPEN v_cur FOR SELECT * FROM EMPLOYEES;
+    DBMS_OUTPUT.PUT_LINE(PRINT_HTML_TABLE(v_cur));
 
-    end;
+end;
